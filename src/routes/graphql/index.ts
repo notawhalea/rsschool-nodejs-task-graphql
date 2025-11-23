@@ -1,36 +1,15 @@
 import { FastifyPluginAsyncTypebox } from '@fastify/type-provider-typebox';
 import { createGqlResponseSchema, gqlResponseSchema } from './schemas.js';
-import { GraphQLObjectType, GraphQLSchema, graphql, parse, validate } from 'graphql';
-import { memberTypeQuery, memberTypesQuery } from './memberTypes.js';
-import {
-  changeUserMutation,
-  createUserMutation,
-  deleteUserMutation,
-  subscribeToMutation,
-  unsubscribeFromMutation,
-  userQuery,
-  usersQuery,
-} from './user.js';
-import {
-  changePostMutation,
-  createPostMutation,
-  deletePostMutation,
-  postQuery,
-  postsQuery,
-} from './post.js';
-import {
-  changeProfileMutation,
-  createProfileMutation,
-  deleteProfileMutation,
-  profileQuery,
-  profilesQuery,
-} from './profile.js';
 import depthLimit from 'graphql-depth-limit';
+import { createSchema } from './schema.js';
+import { createDataLoaders } from './dataloader.js';
+import { execute, parse, validate } from 'graphql';
 
 const GRAPHQL_DEPTH_LIMIT = 5;
 
 const plugin: FastifyPluginAsyncTypebox = async (fastify) => {
   const { prisma } = fastify;
+  const schema = createSchema(prisma);
 
   fastify.route({
     url: '/',
@@ -42,61 +21,22 @@ const plugin: FastifyPluginAsyncTypebox = async (fastify) => {
       },
     },
     async handler(req) {
-      const schema = new GraphQLSchema({
-        query: new GraphQLObjectType({
-          name: 'Query',
-          fields: {
-            memberTypes: memberTypesQuery,
-            memberType: memberTypeQuery,
-            users: usersQuery,
-            user: userQuery,
-            posts: postsQuery,
-            post: postQuery,
-            profiles: profilesQuery,
-            profile: profileQuery,
-          },
-        }),
-        mutation: new GraphQLObjectType({
-          name: 'mutation',
-          fields: {
-            createUser: createUserMutation,
-            createPost: createPostMutation,
-            createProfile: createProfileMutation,
-            changeUser: changeUserMutation,
-            changePost: changePostMutation,
-            changeProfile: changeProfileMutation,
-            deleteUser: deleteUserMutation,
-            deletePost: deletePostMutation,
-            deleteProfile: deleteProfileMutation,
-            subscribeTo: subscribeToMutation,
-            unsubscribeFrom: unsubscribeFromMutation,
-          },
-        }),
-      });
+      const { query, variables } = req.body;
+      const document = parse(query);
+      const validationErrors = validate(schema, document, [depthLimit(GRAPHQL_DEPTH_LIMIT)]);
 
-      const errors = validate(schema, parse(req.body.query), [depthLimit(GRAPHQL_DEPTH_LIMIT)]);
-
-      if (errors.length) {
-        return {
-          data: null,
-          errors,
-        };
+      if (validationErrors.length > 0) {
+        return { errors: validationErrors };
       }
 
-      const result = await graphql({
-        schema,
-        source: req.body.query,
-        variableValues: req.body.variables,
-        contextValue: {
-          fastify,
-          dataloaders: new WeakMap(),
-        },
-      });
+      const dataLoaders = createDataLoaders(prisma);
 
-      return {
-        data: result.data,
-        errors: result.errors,
-      };
+      return execute({
+        schema,
+        document,
+        variableValues: variables,
+        contextValue: { dataLoaders },
+      });
     },
   });
 };
