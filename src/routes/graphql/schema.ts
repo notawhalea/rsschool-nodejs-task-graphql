@@ -20,11 +20,11 @@ import type {
 import { UUIDType } from './types/uuid.js';
 import type {
     CreateUserInputType,
-    ChangeUserInputType,
     CreatePostInputType,
-    ChangePostInputType,
     CreateProfileInputType,
-    ChangeProfileInputType,
+    UpdateUserInputType,
+    UpdatePostInputType,
+    UpdateProfileInputType,
 } from './types/types.js';
 import type { createDataLoaders } from './dataloader.js';
 
@@ -95,12 +95,12 @@ export const createSchema = (prisma: PrismaClient) => {
             userSubscribedTo: {
                 type: new GraphQLList(UserType),
                 resolve: async (source: User, _, context: Context): Promise<User[]> =>
-                    context.dataLoaders.userSubscribedToLoader.load(source.id),
+                    context.dataLoaders.isUserSubscribedToLoader.load(source.id),
             },
             subscribedToUser: {
                 type: new GraphQLList(UserType),
                 resolve: async (source: User, _, context: Context): Promise<User[]> =>
-                    context.dataLoaders.subscribedToUserLoader.load(source.id),
+                    context.dataLoaders.isWeSubscribedToUserLoader.load(source.id),
             },
         }),
     });
@@ -175,7 +175,7 @@ export const createSchema = (prisma: PrismaClient) => {
                     id: { type: new GraphQLNonNull(UUIDType) },
                     dto: { type: new GraphQLNonNull(ChangeUserInput) },
                 },
-                resolve: async (_, { id, dto }: { id: string; dto: ChangeUserInputType }) =>
+                resolve: async (_, { id, dto }: { id: string; dto: UpdateUserInputType }) =>
                     prisma.user.update({
                         where: { id },
                         data: dto,
@@ -206,7 +206,7 @@ export const createSchema = (prisma: PrismaClient) => {
                     id: { type: new GraphQLNonNull(UUIDType) },
                     dto: { type: new GraphQLNonNull(ChangeProfileInput) },
                 },
-                resolve: async (_, { id, dto }: { id: string; dto: ChangeProfileInputType }) => {
+                resolve: async (_, { id, dto }: { id: string; dto: UpdateProfileInputType }) => {
                     const data: Partial<Profile> & { memberTypeId?: string } = { ...dto };
                     if (dto.memberTypeId) {
                         data.memberTypeId = dto.memberTypeId.toLowerCase();
@@ -242,7 +242,7 @@ export const createSchema = (prisma: PrismaClient) => {
                     id: { type: new GraphQLNonNull(UUIDType) },
                     dto: { type: new GraphQLNonNull(ChangePostInput) },
                 },
-                resolve: async (_, { id, dto }: { id: string; dto: ChangePostInputType }) =>
+                resolve: async (_, { id, dto }: { id: string; dto: UpdatePostInputType }) =>
                     prisma.post.update({
                         where: { id },
                         data: dto,

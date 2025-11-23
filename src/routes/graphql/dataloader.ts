@@ -7,6 +7,7 @@ export const createDataLoaders = (prisma: PrismaClient) => {
             where: { id: { in: [...ids] } },
         });
         const userMap = new Map(users.map((user) => [user.id, user]));
+
         return ids.map((id) => userMap.get(id) || null);
     });
 
@@ -15,6 +16,7 @@ export const createDataLoaders = (prisma: PrismaClient) => {
             where: { userId: { in: [...ids] } },
         });
         const profileMap = new Map(profiles.map((profile) => [profile.userId, profile]));
+
         return ids.map((id) => profileMap.get(id) || null);
     });
 
@@ -29,6 +31,7 @@ export const createDataLoaders = (prisma: PrismaClient) => {
             }
             postsMap.get(post.authorId)!.push(post);
         });
+
         return ids.map((id) => postsMap.get(id) || []);
     });
 
@@ -37,10 +40,11 @@ export const createDataLoaders = (prisma: PrismaClient) => {
             where: { id: { in: [...ids] } },
         });
         const memberTypeMap = new Map(memberTypes.map((mt) => [mt.id, mt]));
+
         return ids.map((id) => memberTypeMap.get(id) || null);
     });
 
-    const userSubscribedToLoader = new DataLoader<string, User[]>(async (ids) => {
+    const isUserSubscribedToLoader = new DataLoader<string, User[]>(async (ids) => {
         const subscriptions = await prisma.subscribersOnAuthors.findMany({
             where: { subscriberId: { in: [...ids] } },
             include: { author: true },
@@ -55,7 +59,7 @@ export const createDataLoaders = (prisma: PrismaClient) => {
         return ids.map((id) => subscriptionsMap.get(id) || []);
     });
 
-    const subscribedToUserLoader = new DataLoader<string, User[]>(async (ids) => {
+    const isWeSubscribedToUserLoader = new DataLoader<string, User[]>(async (ids) => {
         const subscriptions = await prisma.subscribersOnAuthors.findMany({
             where: { authorId: { in: [...ids] } },
             include: { subscriber: true },
@@ -67,6 +71,7 @@ export const createDataLoaders = (prisma: PrismaClient) => {
             }
             subscriptionsMap.get(sub.authorId)!.push(sub.subscriber);
         });
+
         return ids.map((id) => subscriptionsMap.get(id) || []);
     });
 
@@ -75,7 +80,7 @@ export const createDataLoaders = (prisma: PrismaClient) => {
         profileLoader,
         postsLoader,
         memberTypeLoader,
-        userSubscribedToLoader,
-        subscribedToUserLoader,
+        isUserSubscribedToLoader,
+        isWeSubscribedToUserLoader,
     };
 };

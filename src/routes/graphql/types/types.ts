@@ -1,11 +1,8 @@
+type MemberRole = 'BASIC' | 'BUSINESS';
+
 export interface CreateUserInputType {
     name: string;
     balance: number;
-}
-
-export interface ChangeUserInputType {
-    name?: string;
-    balance?: number;
 }
 
 export interface CreatePostInputType {
@@ -14,20 +11,13 @@ export interface CreatePostInputType {
     authorId: string;
 }
 
-export interface ChangePostInputType {
-    title?: string;
-    content?: string;
-}
-
 export interface CreateProfileInputType {
     isMale: boolean;
     yearOfBirth: number;
     userId: string;
-    memberTypeId: 'BASIC' | 'BUSINESS';
+    memberTypeId: MemberRole;
 }
 
-export interface ChangeProfileInputType {
-    isMale?: boolean;
-    yearOfBirth?: number;
-    memberTypeId?: 'BASIC' | 'BUSINESS';
-}
+export type UpdateUserInputType = Partial<CreateUserInputType>;
+export type UpdatePostInputType = Partial<Omit<CreatePostInputType, 'authorId'>>;
+export type UpdateProfileInputType = Partial<Omit<CreateProfileInputType, 'userId'>>;
